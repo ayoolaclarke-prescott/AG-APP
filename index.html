@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AGC Performance System</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f4f0;color:#1a1a1a;font-size:14px;line-height:1.6}
+
+/* ── Color tokens ── */
+:root{
+  --teal-50:#E1F5EE;--teal-100:#9FE1CB;--teal-200:#5DCAA5;
+  --teal-400:#1D9E75;--teal-600:#0F6E56;--teal-800:#085041;
+  --blue-50:#E6F1FB;--blue-400:#378ADD;--blue-600:#185FA5;--blue-800:#0C447C;
+  --amber-50:#FAEEDA;--amber-100:#FAC775;--amber-400:#BA7517;
+  --amber-600:#854F0B;--amber-800:#633806;
+  --coral-50:#FAECE7;--coral-100:#F5C4B3;--coral-400:#D85A30;
+  --coral-600:#993C1D;--coral-800:#712B13;
+  --gray-50:#F1EFE8;--gray-100:#D3D1C7;--gray-400:#888780;
+  --gray-600:#5F5E5A;--gray-800:#444441;
+  --green-400:#639922;--green-600:#3B6D11;
+  --purple-50:#EEEDFE;--purple-400:#7F77DD;
+  --purple-600:#534AB7;--purple-800:#3C3489;
+  --bg:#f5f4f0;--surface:#fff;--border:rgba(0,0,0,0.11);
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --radius:8px;--radius-lg:12px;
+}
+
+/* ── Layout ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+  width:210px;min-width:210px;background:var(--surface);
+  border-right:0.5px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.brand{padding:16px 14px 10px;border-bottom:0.5px solid var(--border)}
+.brand-sub{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--teal-600);margin-bottom:3px}
+.brand-name{font-size:13.5px;font-weight:500;line-height:1.25}
+.nav{flex:1;padding:6px 8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+.nav-sec{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-400);padding:10px 8px 3px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:7px 9px;
+  border-radius:7px;cursor:pointer;font-size:13px;color:var(--text2);
+  background:none;border:none;width:100%;text-align:left;transition:all .13s;
+}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--teal-50);color:var(--teal-800);font-weight:500}
+.nav-item i{font-size:16px}
+.sidebar-foot{
+  padding:10px 14px;border-top:0.5px solid var(--border);
+  font-size:11px;color:var(--text3);
+}
+.main{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── Page header ── */
+.ph{margin-bottom:16px}
+.pt{font-size:18px;font-weight:500}
+.ps{font-size:12px;color:var(--text2);margin-top:1px}
+
+/* ── Stat cards ── */
+.sg{display:grid;gap:10px;margin-bottom:16px}
+.sg-4{grid-template-columns:repeat(4,1fr)}
+.sg-3{grid-template-columns:repeat(3,1fr)}
+.sg-2{grid-template-columns:repeat(2,1fr)}
+.sc{background:var(--bg);border-radius:9px;padding:12px 14px}
+.sl{font-size:11px;color:var(--text2);font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.sl i{font-size:13px}
+.sv{font-size:22px;font-weight:500}
+.schange{font-size:11px;margin-top:2px}
+.pos{color:var(--teal-600)}.neg{color:var(--coral-600)}.neu{color:var(--gray-600)}
+
+/* ── Cards ── */
+.cr{display:grid;gap:14px;margin-bottom:16px}
+.cr-2{grid-template-columns:1fr 1fr}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:11px;padding:14px 16px}
+.ct{font-size:10px;font-weight:600;margin-bottom:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em}
+
+/* ── Tables ── */
+.tb{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{
+  text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text2);padding:6px 8px;
+  border-bottom:0.5px solid var(--border);
+}
+td{padding:8px;border-bottom:0.5px solid rgba(0,0,0,.06);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9f9f7}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:500;padding:2px 7px;border-radius:5px}
+.b-paid{background:var(--teal-50);color:var(--teal-800)}
+.b-pending{background:var(--amber-50);color:var(--amber-800)}
+.b-overdue{background:var(--coral-50);color:var(--coral-800)}
+.b-present{background:var(--teal-50);color:var(--teal-800)}
+.b-absent{background:var(--coral-50);color:var(--coral-800)}
+.b-late{background:var(--amber-50);color:var(--amber-800)}
+.b-cat{background:var(--blue-50);color:var(--blue-800)}
+.b-pr{background:var(--purple-50);color:var(--purple-800)}
+
+/* ── Avatars ── */
+.av{
+  width:26px;height:26px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;flex-shrink:0;color:#fff;
+}
+.mc{display:flex;align-items:center;gap:8px}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;
+  cursor:pointer;border:0.5px solid rgba(0,0,0,.18);
+  background:transparent;color:var(--text);transition:all .13s;
+}
+.btn:hover{background:var(--bg)}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--teal-400);color:#fff;border-color:var(--teal-400)}
+.btn-p:hover{background:var(--teal-600);border-color:var(--teal-600)}
+.btn-s{padding:3px 9px;font-size:11.5px}
+.btn-danger{background:var(--coral-50);color:var(--coral-800);border-color:var(--coral-100)}
+.btn-danger:hover{background:var(--coral-100)}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.srch{
+  display:flex;align-items:center;gap:7px;background:var(--bg);
+  border:0.5px solid var(--border);border-radius:7px;padding:5px 10px;width:200px;
+}
+.srch input{border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text);width:100%}
+.srch i{font-size:13px;color:var(--gray-400)}
+
+/* ── Modal ── */
+.mbg{
+  position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:200;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal{
+  background:var(--surface);border-radius:13px;padding:22px 24px;
+  width:460px;max-width:95vw;border:0.5px solid var(--border);
+  max-height:92vh;overflow-y:auto;
+}
+.mt{font-size:15px;font-weight:500;margin-bottom:16px}
+.fg{margin-bottom:12px}
+.fl{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:4px;display:block}
+.fi{
+  width:100%;padding:7px 10px;border:0.5px solid rgba(0,0,0,.18);
+  border-radius:7px;font-size:12.5px;background:var(--surface);color:var(--text);outline:none;
+}
+.fi:focus{border-color:var(--teal-400);box-shadow:0 0 0 2px rgba(29,158,117,.12)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* ── Fee bars ── */
+.bar-t{background:var(--gray-100);border-radius:4px;height:6px;overflow:hidden;margin-top:3px}
+.bar-f{height:100%;border-radius:4px;transition:width .5s}
+.fbw{margin-bottom:9px}
+.fbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+
+/* ── Lift tracker ── */
+.lift-card{
+  border:0.5px solid var(--border);border-radius:9px;padding:12px;
+  text-align:center;cursor:pointer;transition:all .13s;
+}
+.lift-card:hover{background:var(--teal-50);border-color:var(--teal-200)}
+.lift-card.sel{background:var(--teal-50);border-color:var(--teal-400)}
+.lift-val{font-size:22px;font-weight:500;color:var(--teal-800)}
+.lift-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.pr-tag{font-size:10px;background:var(--purple-50);color:var(--purple-800);padding:1px 5px;border-radius:4px;font-weight:500}
+.sparks{display:flex;align-items:flex-end;gap:2px;height:28px;margin-top:6px}
+.spark{width:5px;border-radius:2px 2px 0 0;transition:background .2s}
+
+/* ── Attendance ── */
+.att-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.att-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px}
+.att-p{background:var(--teal-50);color:var(--teal-800)}
+.att-a{background:var(--coral-50);color:var(--coral-800)}
+.att-n{background:var(--gray-50);color:var(--gray-400)}
+.seg{display:flex;gap:3px}
+.seg-btn{
+  padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;
+  border:0.5px solid var(--border);background:none;color:var(--text2);transition:all .12s;
+}
+.tabs{display:flex;gap:4px;margin-bottom:14px}
+.tab{padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:0.5px solid var(--border);background:none;color:var(--text2);transition:all .13s}
+.tab.on{background:var(--teal-400);color:#fff;border-color:var(--teal-400)}
+.dnt{display:flex;align-items:center;gap:8px}
+.sep{border-top:0.5px solid var(--border);margin:12px 0}
+
+/* ── Loading / Toast ── */
+.loading-screen{
+  position:fixed;inset:0;background:var(--bg);display:flex;
+  align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  font-size:14px;color:var(--text2);z-index:300;
+}
+.spinner{
+  width:28px;height:28px;border:2.5px solid var(--teal-100);
+  border-top-color:var(--teal-400);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{
+  position:fixed;bottom:20px;right:20px;background:var(--teal-800);color:#fff;
+  padding:10px 16px;border-radius:9px;font-size:13px;z-index:400;
+  animation:slideUp .2s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── DB status banner ── */
+.db-banner{
+  background:var(--amber-50);border-bottom:0.5px solid var(--amber-100);
+  padding:7px 16px;font-size:12px;color:var(--amber-800);
+  display:flex;align-items:center;gap:8px;
+}
+
+/* ── Mobile responsive ── */
+@media(max-width:600px){
+  .sidebar{
+    width:100%;height:56px;flex-direction:row;
+    position:fixed;bottom:0;left:0;right:0;
+    border-top:0.5px solid var(--border);border-right:none;z-index:50;
+  }
+  .brand,.sidebar-foot,.nav-sec{display:none}
+  .nav{flex-direction:row;padding:4px;justify-content:space-around;align-items:center}
+  .nav-item{flex-direction:column;font-size:9px;gap:1px;padding:4px 8px;border-radius:6px}
+  .nav-item i{font-size:18px}
+  .main{padding:14px 14px 70px}
+  .sg-4{grid-template-columns:repeat(2,1fr)}
+  .cr-2{grid-template-columns:1fr}
+  .fr{grid-template-columns:1fr}
+  .modal{width:95vw;padding:16px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ════════════════════════════════════════════════════════
+   SUPABASE CONFIG — replace these two values with your own
+   from: supabase.com → your project → Settings → API
+   ════════════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE';
+
+/* ────────────────────────────────────────────────────────
+   DB layer — all reads and writes go through these helpers.
+   When Supabase is not configured, the app falls back to
+   local in-memory data so you can demo it immediately.
+   ──────────────────────────────────────────────────────── */
+const isConfigured = !SUPABASE_URL.includes('YOUR_PROJECT');
+let db = null;
+if (isConfigured) {
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+/* ────────────────────────────────────────────────────────
+   SEED DATA (used when Supabase is not configured)
+   ──────────────────────────────────────────────────────── */
+const AV_COLORS = ['#1D9E75','#378ADD','#D85A30','#BA7517','#7F77DD','#D4537E','#639922','#0F6E56','#993C1D','#534AB7'];
+const ini = n => n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+const avc = id => AV_COLORS[id % AV_COLORS.length];
+
+function mkLifts(seed) {
+  const base = [120, 80, 100];
+  return ['squat','bench','deadlift'].reduce((a, l, i) => {
+    a[l] = Array.from({length:8}, (_,j) => ({
+      date: `2026-0${Math.min(j+1,9)}-${String((seed*3+j*7)%27+1).padStart(2,'0')}`,
+      weight: Math.round(base[i] * (0.7 + seed*0.03 + j*0.025))
+    }));
+    return a;
+  }, {});
+}
+
+function mkMember(id, name, weight, cat, feeStatus) {
+  return {
+    id, name, weight, cat, feeStatus,
+    feeDate: feeStatus==='paid' ? `2026-05-0${id%9+1}` : '',
+    phone: `868-555-01${String(id).padStart(2,'0')}`,
+    sessions: Array.from({length:28}, () => {
+      const r = Math.random();
+      return r > .25 ? (r > .9 ? 'late' : 'present') : 'absent';
+    }),
+    lifts: mkLifts(id),
+    fees: [
+      {m:'May 2026', s:feeStatus, d:feeStatus==='paid'?`2026-05-0${id%9+1}`:'', amt:150},
+      {m:'Apr 2026', s:'paid', d:'2026-04-03', amt:150},
+      {m:'Mar 2026', s:'paid', d:'2026-03-04', amt:150},
+    ]
+  };
+}
+
+const SEED_MEMBERS = [
+  mkMember(1,'Marcus Williams',94.5,'Senior','paid'),
+  mkMember(2,'Kezia Ramoutar',72.0,'Junior','paid'),
+  mkMember(3,'Jordan Baptiste',105.0,'Senior','pending'),
+  mkMember(4,'Alicia Dhanoo',58.5,'Junior','paid'),
+  mkMember(5,'Deshawn Phillip',120.0,'Open','overdue'),
+  mkMember(6,'Priya Seenath',63.0,'Senior','paid'),
+  mkMember(7,'Tyrone Charles',87.0,'Open','paid'),
+  mkMember(8,'Natasha Singh',69.5,'Junior','pending'),
+  mkMember(9,'Obinna Hercules',110.0,'Senior','paid'),
+  mkMember(10,'Camille Rousseau',52.0,'Junior','paid'),
+];
+
+const SEED_SESSIONS = Array.from({length:12}, (_,i) => ({
+  id: i+1,
+  date: `2026-05-${String(i*2+1).padStart(2,'0')}`,
+  name: ['Squat Seminar','Deadlift Day','Bench Workshop','Competition Prep','Strength Test','Nutrition Talk','Full Body','Speed Work','Max Effort','Dynamic Effort','Accessory Day','Team Session'][i],
+  present: 6 + Math.floor(Math.random()*5),
+  absent: Math.floor(Math.random()*3),
+  total: 10
+}));
+
+/* ════════════════════════════════════════════════════════
+   REACT APP
+   ════════════════════════════════════════════════════════ */
+const { useState, useEffect, useMemo, useCallback } = React;
+
+/* ── Helpers ── */
+function DonutSmall({ pct, color, size=28 }) {
+  const r=10, cx=14, cy=14, c=2*Math.PI*r;
+  return React.createElement('svg', { width:size, height:size, viewBox:'0 0 28 28', style:{transform:'rotate(-90deg)'} },
+    React.createElement('circle', { cx, cy, r, fill:'none', stroke:'var(--gray-100)', strokeWidth:4 }),
+    React.createElement('circle', { cx, cy, r, fill:'none', stroke:color, strokeWidth:4,
+      strokeDasharray:`${(pct/100)*c} ${c}`, strokeLinecap:'round' })
+  );
+}
+
+function SparkLine({ data }) {
+  const max = Math.max(...data), min = Math.min(...data), range = max-min||1;
+  return React.createElement('div', { className:'sparks' },
+    data.map((v,i) => React.createElement('div', { key:i, className:'spark',
+      style: {
+        height: `${Math.round(((v-min)/range)*20+6)}px`,
+        background: i===data.length-1 ? 'var(--teal-400)' : 'var(--teal-100)'
+      }
+    }))
+  );
+}
+
+function AttCal({ sessions }) {
+  const days = ['M','T','W','T','F','S','S'];
+  return React.createElement('div', null,
+    React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,marginBottom:4} },
+      days.map((d,i) => React.createElement('div', { key:i, style:{textAlign:'center',fontSize:9,color:'var(--text2)',fontWeight:500} }, d))
+    ),
+    React.createElement('div', { className:'att-grid' },
+      sessions.slice(0,28).map((s,i) =>
+        React.createElement('div', { key:i, className:`att-cell ${s==='present'?'att-p':s==='absent'?'att-a':'att-n'}` },
+          s==='present'?'✓':s==='absent'?'✗':'·'
+        )
+      )
+    )
+  );
+}
+
+function Toast({ msg }) {
+  return msg ? React.createElement('div', { className:'toast' }, msg) : null;
+}
+
+/* ── Dashboard ── */
+function Dashboard({ members }) {
+  const paid = members.filter(m => m.feeStatus==='paid').length;
+  const pending = members.filter(m => m.feeStatus==='pending').length;
+  const overdue = members.filter(m => m.feeStatus==='overdue').length;
+  const rev = paid * 150;
+  const attAvg = members.length ? Math.round(
+    members.reduce((a,m) => a + (m.sessions.filter(s=>s==='present').length/m.sessions.length)*100, 0) / members.length
+  ) : 0;
+  const topSquat = members.length ? Math.max(...members.map(m => m.lifts.squat[m.lifts.squat.length-1].weight)) : 0;
+
+  return React.createElement('div', null,
+    React.createElement('div', { className:'sg sg-4' },
+      [
+        ['ti-users','blue-600','Members',members.length,'Active this month',true],
+        ['ti-cash','teal-600','Revenue May','$'+rev,paid+'/'+members.length+' paid',paid===members.length],
+        ['ti-chart-bar','amber-600','Avg attendance',attAvg+'%',attAvg>=75?'On track':'Needs attention',attAvg>=75],
+        ['ti-trophy','purple-600','Top squat',topSquat+'kg','Club best',true],
+      ].map(([icon,color,label,val,sub,good]) =>
+        React.createElement('div', { key:label, className:'sc' },
+          React.createElement('div', { className:'sl' }, React.createElement('i', { className:`ti ${icon}`, style:{color:`var(--${color})`} }), ' ', label),
+          React.createElement('div', { className:'sv' }, val),
+          React.createElement('div', { className:`schange ${good?'pos':'neg'}` }, sub)
+        )
+      )
+    ),
+    React.createElement('div', { className:'cr cr-2' },
+      React.createElement('div', { className:'card' },
+        React.createElement('div', { className:'ct' }, 'Fee breakdown'),
+        [['Paid','teal',paid,members.length],['Pending','amber',pending,members.length],['Overdue','coral',overdue,members.length]].map(([l,c,v,t]) =>
+          React.createElement('div', { key:l, className:'fbw' },
+            React.createElement('div', { className:'fbl' }, React.createElement('span',null,l), React.createElement('span',{style:{fontWeight:500}},v+' members')),
+            React.createElement('div', { className:'bar-t' },
+              React.createElement('div', { className:'bar-f', style:{width:`${t?Math.round(v/t*100):0}%`,background:`var(--${c}-400)`} })
+            )
+          )
+        ),
+        React.createElement('div', { style:{marginTop:10,display:'flex',gap:8,flexWrap:'wrap'} },
+          React.createElement('span', { className:'badge b-paid' }, '$'+rev+' collected'),
+          React.createElement('span', { className:'badge b-overdue' }, '$'+(pending+overdue)*150+' outstanding')
+        )
+      ),
+      React.createElement('div', { className:'card' },
+        React.createElement('div', { className:'ct' }, 'Club strength leaders'),
+        React.createElement('div', { className:'tb' },
+          React.createElement('table', null,
+            React.createElement('thead', null,
+              React.createElement('tr', null,
+                ['Athlete','Squat','Bench','Deadlift'].map(h => React.createElement('th', { key:h }, h))
+              )
+            ),
+            React.createElement('tbody', null,
+              members.slice()
+                .sort((a,b) =>
+                  (b.lifts.squat.at(-1).weight + b.lifts.bench.at(-1).weight + b.lifts.deadlift.at(-1).weight) -
+                  (a.lifts.squat.at(-1).weight + a.lifts.bench.at(-1).weight + a.lifts.deadlift.at(-1).weight)
+                )
+                .slice(0,5)
+                .map(m => React.createElement('tr', { key:m.id },
+                  React.createElement('td', null,
+                    React.createElement('div', { className:'mc' },
+                      React.createElement('div', { className:'av', style:{background:avc(m.id),fontSize:9} }, ini(m.name)),
+                      m.name.split(' ')[0]
+                    )
+                  ),
+                  React.createElement('td', null, m.lifts.squat.at(-1).weight+'kg'),
+                  React.createElement('td', null, m.lifts.bench.at(-1).weight+'kg'),
+                  React.createElement('td', null, m.lifts.deadlift.at(-1).weight+'kg')
+                ))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ── Members ── */
+function Members({ members, setMembers, toast }) {
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(false);
+  const [view, setView] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name:'', weight:'', cat:'Senior', phone:'', feeStatus:'pending' });
+  const filtered = useMemo(() => members.filter(m => m.name.toLowerCase().includes(search.toLowerCase())), [members, search]);
+  const attPct = m => Math.round((m.sessions.filter(s=>s==='present').length / m.sessions.length) * 100);
+
+  const handleAdd = async () => {
+    if (!form.name) return;
+    setSaving(true);
+    try {
+      if (isConfigured) {
+        const { data, error } = await db.from('members').insert({
+          name: form.name, weight: parseFloat(form.weight)||0,
+          category: form.cat, phone: form.phone, fee_status: form.feeStatus
+        }).select().single();
+        if (error) throw error;
+        const nm = mkMember(data.id, data.name, data.weight, data.category, data.fee_status);
+        setMembers(prev => [...prev, nm]);
+      } else {
+        const id = members.length + 1;
+        setMembers(prev => [...prev, mkMember(id, form.name, parseFloat(form.weight)||0, form.cat, form.feeStatus)]);
+      }
+      toast('Member added!');
+      setModal(false);
+      setForm({ name:'', weight:'', cat:'Senior', phone:'', feeStatus:'pending' });
+    } catch(e) {
+      toast('Error: ' + e.message);
+    }
+    setSaving(false);
+  };
+
+  const handleMarkPaid = async (member) => {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      if (isConfigured) {
+        await db.from('members').update({ fee_status:'paid', fee_date:today }).eq('id', member.id);
+        await db.from('fees').insert({ member_id:member.id, month:'May 2026', amount:150, status:'paid', paid_date:today });
+      }
+      setMembers(prev => prev.map(x => x.id===member.id
+        ? { ...x, feeStatus:'paid', feeDate:today, fees:x.fees.map((f,i) => i===0?{...f,s:'paid',d:today}:f) }
+        : x
+      ));
+      toast('Fee marked as paid');
+      setView(null);
+    } catch(e) {
+      toast('Error: ' + e.message);
+    }
+  };
+
+  if (view) {
+    const m = members.find(x => x.id===view);
+    if (!m) return null;
+    const pct = attPct(m);
+    return React.createElement('div', null,
+      React.createElement('div', { style:{display:'flex',alignItems:'center',gap:10,marginBottom:16} },
+        React.createElement('button', { className:'btn btn-s', onClick:()=>setView(null) }, React.createElement('i',{className:'ti ti-arrow-left'}), ' Back'),
+        React.createElement('div', { className:'av', style:{background:avc(m.id),width:34,height:34,fontSize:12} }, ini(m.name)),
+        React.createElement('div', null,
+          React.createElement('div', { style:{fontWeight:500,fontSize:15} }, m.name),
+          React.createElement('div', { style:{fontSize:11,color:'var(--text2)'} }, m.cat+' · '+m.weight+'kg · '+m.phone)
+        )
+      ),
+      React.createElement('div', { className:'sg sg-3', style:{marginBottom:14} },
+        ['squat','bench','deadlift'].map(l =>
+          React.createElement('div', { key:l, className:'lift-card' },
+            React.createElement('div', { className:'lift-val' }, m.lifts[l].at(-1).weight+'kg'),
+            React.createElement('div', { className:'lift-lbl' }, l.charAt(0).toUpperCase()+l.slice(1)),
+            React.createElement(SparkLine, { data:m.lifts[l].map(x=>x.weight) })
+          )
+        )
+      ),
+      React.createElement('div', { className:'cr cr-2' },
+        React.createElement('div', { className:'card' },
+          React.createElement('div', { className:'ct' }, 'Attendance record'),
+          React.createElement(AttCal, { sessions:m.sessions }),
+          React.createElement('div', { style:{display:'flex',alignItems:'center',gap:10,marginTop:10} },
+            React.createElement(DonutSmall, { pct, color:'var(--teal-400)', size:36 }),
+            React.createElement('div', null,
+              React.createElement('div', { style:{fontWeight:500} }, pct+'% present'),
+              React.createElement('div', { style:{fontSize:11,color:'var(--text2)'} }, m.sessions.filter(s=>s==='present').length+' of 28 sessions')
+            )
+          )
+        ),
+        React.createElement('div', { className:'card' },
+          React.createElement('div', { className:'ct' }, 'Fee history'),
+          React.createElement('div', { className:'tb' },
+            React.createElement('table', null,
+              React.createElement('thead', null, React.createElement('tr', null, ['Month','Amount','Status','Date'].map(h=>React.createElement('th',{key:h},h)))),
+              React.createElement('tbody', null, m.fees.map((f,i) =>
+                React.createElement('tr', { key:i },
+                  React.createElement('td',null,f.m),
+                  React.createElement('td',null,'$'+f.amt),
+                  React.createElement('td',null,React.createElement('span',{className:'badge b-'+f.s},f.s)),
+                  React.createElement('td',null,f.d||'—')
+                )
+              ))
+            )
+          ),
+          m.feeStatus !== 'paid' && React.createElement('button', {
+            className:'btn btn-p btn-s', style:{marginTop:10},
+            onClick:()=>handleMarkPaid(m)
+          }, React.createElement('i',{className:'ti ti-check'}), ' Mark May paid')
+        )
+      )
+    );
+  }
+
+  return React.createElement('div', null,
+    React.createElement('div', { className:'toolbar' },
+      React.createElement('div', { className:'srch' },
+        React.createElement('i', { className:'ti ti-search' }),
+        React.createElement('input', { placeholder:'Search members...', value:search, onChange:e=>setSearch(e.target.value) })
+      ),
+      React.createElement('button', { className:'btn btn-p', onClick:()=>setModal(true) },
+        React.createElement('i',{className:'ti ti-plus'}), ' Add member'
+      )
+    ),
+    React.createElement('div', { className:'card' },
+      React.createElement('div', { className:'tb' },
+        React.createElement('table', null,
+          React.createElement('thead', null,
+            React.createElement('tr', null,
+              ['Member','Category','Weight','Squat PR','Deadlift PR','Attendance','Fee',''].map(h=>React.createElement('th',{key:h},h))
+            )
+          ),
+          React.createElement('tbody', null,
+            filtered.map(m =>
+              React.createElement('tr', { key:m.id },
+                React.createElement('td', null,
+                  React.createElement('div', { className:'mc' },
+                    React.createElement('div', { className:'av', style:{background:avc(m.id)} }, ini(m.name)),
+                    React.createElement('div', null,
+                      React.createElement('div', { style:{fontWeight:500} }, m.name),
+                      React.createElement('div', { style:{fontSize:10,color:'var(--text2)'} }, m.phone)
+                    )
+                  )
+                ),
+                React.createElement('td',null,React.createElement('span',{className:'badge b-cat'},m.cat)),
+                React.createElement('td',null,m.weight+'kg'),
+                React.createElement('td',null,React.createElement('span',{className:'badge b-pr'},m.lifts.squat.at(-1).weight+'kg')),
+                React.createElement('td',null,React.createElement('span',{className:'badge b-pr'},m.lifts.deadlift.at(-1).weight+'kg')),
+                React.createElement('td',null,
+                  React.createElement('div',{className:'dnt'},
+                    React.createElement(DonutSmall,{pct:attPct(m),color:'var(--teal-400)'}),
+                    React.createElement('span',{style:{fontSize:11}},attPct(m)+'%')
+                  )
+                ),
+                React.createElement('td',null,React.createElement('span',{className:'badge b-'+m.feeStatus},m.feeStatus)),
+                React.createElement('td',null,
+                  React.createElement('button',{className:'btn btn-s',onClick:()=>setView(m.id)},
+                    React.createElement('i',{className:'ti ti-eye'}), ' View'
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    modal && React.createElement('div', { className:'mbg', onClick:()=>setModal(false) },
+      React.createElement('div', { className:'modal', onClick:e=>e.stopPropagation() },
+        React.createElement('div', { className:'mt' }, 'Add new member'),
+        React.createElement('div', { className:'fr' },
+          React.createElement('div', { className:'fg' },
+            React.createElement('label',{className:'fl'},'Full name'),
+            React.createElement('input',{className:'fi',value:form.name,onChange:e=>setForm({...form,name:e.target.value}),placeholder:'e.g. Marcus Williams'})
+          ),
+          React.createElement('div', { className:'fg' },
+            React.createElement('label',{className:'fl'},'Phone'),
+            React.createElement('input',{className:'fi',value:form.phone,onChange:e=>setForm({...form,phone:e.target.value}),placeholder:'868-555-0100'})
+          )
+        ),
+        React.createElement('div', { className:'fr' },
+          React.createElement('div', { className:'fg' },
+            React.createElement('label',{className:'fl'},'Body weight (kg)'),
+            React.createElement('input',{className:'fi',type:'number',value:form.weight,onChange:e=>setForm({...form,weight:e.target.value}),placeholder:'93'})
+          ),
+          React.createElement('div', { className:'fg' },
+            React.createElement('label',{className:'fl'},'Category'),
+            React.createElement('select',{className:'fi',value:form.cat,onChange:e=>setForm({...form,cat:e.target.value})},
+              ['Junior','Senior','Open','Masters'].map(c=>React.createElement('option',{key:c},c))
+            )
+          )
+        ),
+        React.createElement('div', { className:'fg' },
+          React.createElement('label',{className:'fl'},'Fee status'),
+          React.createElement('select',{className:'fi',value:form.feeStatus,onChange:e=>setForm({...form,feeStatus:e.target.value})},
+            ['pending','paid','overdue'].map(s=>React.createElement('option',{key:s},s))
+          )
+        ),
+        React.createElement('div', { className:'ma' },
+          React.createElement('button',{className:'btn',onClick:()=>setModal(false)},'Cancel'),
+          React.createElement('button',{className:'btn btn-p',onClick:handleAdd,disabled:saving},
+            saving ? 'Saving...' : React.createElement('span',null,React.createElement('i',{className:'ti ti-check'}),' Add member')
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ── Fees ── */
+function Fees({ members, setMembers, toast }) {
+  const [filter, setFilter] = useState('all');
+  const filtered = filter==='all' ? members : members.filter(m=>m.feeStatus===filter);
+  const paid = members.filter(m=>m.feeStatus==='paid').length;
+  const rev = paid * 150;
+  const out = members.filter(m=>m.feeStatus!=='paid').length * 150;
+
+  const handleMarkPaid = async (id) => {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      if (isConfigured) {
+        await db.from('members').update({ fee_status:'paid', fee_date:today }).eq('id', id);
+      }
+      setMembers(prev => prev.map(x => x.id===id ? {...x, feeStatus:'paid', feeDate:today} : x));
+      toast('Fee recorded');
+    } catch(e) { toast('Error: '+e.message); }
+  };
+
+  return React.createElement('div', null,
+    React.createElement('div', { className:'sg sg-3', style:{marginBottom:14} },
+      [
+        ['ti-check','teal-600','Collected','$'+rev],
+        ['ti-clock','amber-600','Outstanding','$'+out],
+        ['ti-chart-pie','blue-600','Collection rate',Math.round(paid/members.length*100)+'%'],
+      ].map(([icon,color,label,val]) =>
+        React.createElement('div', { key:label, className:'sc' },
+          React.createElement('div', { className:'sl' }, React.createElement('i',{className:`ti ${icon}`,style:{color:`var(--${color})`}}), ' ', label),
+          React.createElement('div', { className:'sv' }, val)
+        )
+      )
+    ),
+    React.createElement('div', { className:'tabs' },
+      ['all','paid','pending','overdue'].map(f =>
+        React.createElement('button', { key:f, className:`tab${filter===f?' on':''}`, onClick:()=>setFilter(f) },
+          f.charAt(0).toUpperCase()+f.slice(1)
+        )
+      )
+    ),
+    React.createElement('div', { className:'card' },
+      React.createElement('div', { className:'tb' },
+        React.createElement('table', null,
+          React.createElement('thead', null,
+            React.createElement('tr', null, ['Member','Category','May 2026','Amount','Paid on','Action'].map(h=>React.createElement('th',{key:h},h)))
+          ),
+          React.createElement('tbody', null,
+            filtered.map(m =>
+              React.createElement('tr', { key:m.id },
+                React.createElement('td', null,
+                  React.createElement('div',{className:'mc'},
+                    React.createElement('div',{className:'av',style:{background:avc(m.id)}},ini(m.name)),
+                    m.name
+                  )
+                ),
+                React.createElement('td',null,m.cat),
+                React.createElement('td',null,React.createElement('span',{className:'badge b-'+m.feeStatus},m.feeStatus)),
+                React.createElement('td',null,'$150'),
+                React.createElement('td',null,m.feeDate||'—'),
+                React.createElement('td',null,
+                  m.feeStatus!=='paid'
+                    ? React.createElement('button',{className:'btn btn-p btn-s',onClick:()=>handleMarkPaid(m.id)},
+                        React.createElement('i',{className:'ti ti-check'}),' Mark paid'
+                      )
+                    : React.createElement('span',{style:{fontSize:11,color:'var(--teal-600)'}},
+                        React.createElement('i',{className:'ti ti-circle-check'}),' Paid'
+                      )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ── Attendance ── */
+function Attendance({ members, sessions, setSessions, toast }) {
+  const [active, setActive] = useState(null);
+  const [att, setAtt] = useState({});
+  const [sessionName, setSessionName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const saveSession = async () => {
+    if (!sessionName) { toast('Please enter a session name'); return; }
+    setSaving(true);
+    const today = new Date().toISOString().split('T')[0];
+    const present = Object.values(att).filter(v=>v==='present').length;
+    const absent = Object.values(att).filter(v=>v==='absent').length;
+    try {
+      if (isConfigured) {
+        const { data } = await db.from('sessions').insert({
+          session_date: today, name: sessionName,
+          present_count: present, absent_count: absent, total_count: members.length
+        }).select().single();
+        for (const [memberId, status] of Object.entries(att)) {
+          await db.from('attendance').insert({ session_id: data.id, member_id: parseInt(memberId), status });
+        }
+      }
+      setSessions(prev => [{
+        id: prev.length+1, date:today, name:sessionName,
+        present, absent, total:members.length
+      }, ...prev]);
+      toast('Session saved');
+      setActive(null);
+    } catch(e) { toast('Error: '+e.message); }
+    setSaving(false);
+  };
+
+  if (!active) {
+    return React.createElement('div', null,
+      React.createElement('div', { className:'toolbar' },
+        React.createElement('span', { style:{fontSize:12,color:'var(--text2)'} }, sessions.length+' sessions logged'),
+        React.createElement('button', { className:'btn btn-p', onClick:()=>{setActive('new');setAtt({});setSessionName('');} },
+          React.createElement('i',{className:'ti ti-plus'}), ' Take attendance'
+        )
+      ),
+      React.createElement('div', { className:'card' },
+        React.createElement('div', { className:'tb' },
+          React.createElement('table', null,
+            React.createElement('thead', null,
+              React.createElement('tr', null, ['Date','Session','Present','Absent','Rate'].map(h=>React.createElement('th',{key:h},h)))
+            ),
+            React.createElement('tbody', null,
+              sessions.map(s =>
+                React.createElement('tr', { key:s.id },
+                  React.createElement('td',null,s.date),
+                  React.createElement('td',null,s.name),
+                  React.createElement('td',null,React.createElement('span',{className:'badge b-present'},s.present)),
+                  React.createElement('td',null,React.createElement('span',{className:'badge b-absent'},s.absent)),
+                  React.createElement('td',null,
+                    React.createElement('div',{className:'dnt'},
+                      React.createElement(DonutSmall,{pct:Math.round(s.present/s.total*100),color:'var(--teal-400)'}),
+                      React.createElement('span',{style:{fontSize:11}},Math.round(s.present/s.total*100)+'%')
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+
+  return React.createElement('div', null,
+    React.createElement('div', { style:{display:'flex',alignItems:'center',gap:10,marginBottom:14} },
+      React.createElement('button',{className:'btn btn-s',onClick:()=>setActive(null)},React.createElement('i',{className:'ti ti-arrow-left'}),' Back'),
+      React.createElement('div',{style:{fontWeight:500,fontSize:14}},'Take attendance')
+    ),
+    React.createElement('div', { className:'fg', style:{marginBottom:12} },
+      React.createElement('label',{className:'fl'},'Session name'),
+      React.createElement('input',{className:'fi',style:{maxWidth:320},value:sessionName,onChange:e=>setSessionName(e.target.value),placeholder:'e.g. Squat Seminar'})
+    ),
+    React.createElement('div', { className:'card' },
+      React.createElement('div', { style:{display:'flex',gap:8,marginBottom:12} },
+        React.createElement('span',{className:'badge b-present'},Object.values(att).filter(v=>v==='present').length+' present'),
+        React.createElement('span',{className:'badge b-absent'},Object.values(att).filter(v=>v==='absent').length+' absent'),
+        React.createElement('span',{style:{marginLeft:'auto',fontSize:11,color:'var(--text3)'}},Object.keys(att).length+'/'+members.length+' marked')
+      ),
+      members.map(m =>
+        React.createElement('div', { key:m.id, style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'0.5px solid rgba(0,0,0,.07)'} },
+          React.createElement('div',{className:'mc'},
+            React.createElement('div',{className:'av',style:{background:avc(m.id)}},ini(m.name)),
+            React.createElement('div',null,
+              React.createElement('div',{style:{fontWeight:500,fontSize:13}},m.name),
+              React.createElement('div',{style:{fontSize:10,color:'var(--text2)'}},m.cat)
+            )
+          ),
+          React.createElement('div',{className:'seg'},
+            ['present','absent','late'].map(s =>
+              React.createElement('button',{
+                key:s, className:'seg-btn',
+                style:{
+                  background:att[m.id]===s?(s==='present'?'var(--teal-50)':s==='absent'?'var(--coral-50)':'var(--amber-50)'):'',
+                  color:att[m.id]===s?(s==='present'?'var(--teal-800)':s==='absent'?'var(--coral-800)':'var(--amber-800)'):'',
+                  borderColor:att[m.id]===s?(s==='present'?'var(--teal-200)':s==='absent'?'var(--coral-100)':'var(--amber-100)'):'',
+                  fontWeight:att[m.id]===s?500:400
+                },
+                onClick:()=>setAtt(a=>({...a,[m.id]:s}))
+              }, s[0].toUpperCase()+s.slice(1))
+            )
+          )
+        )
+      ),
+      React.createElement('button',{
+        className:'btn btn-p', style:{marginTop:12}, onClick:saveSession, disabled:saving
+      }, saving?'Saving...':React.createElement('span',null,React.createElement('i',{className:'ti ti-device-floppy'}),' Save session'))
+    )
+  );
+}
+
+/* ── Lift Tracker ── */
+function Lifts({ members, setMembers, toast }) {
+  const [sel, setSel] = useState(members[0]?.id);
+  const [lift, setLift] = useState('squat');
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ weight:'', date:new Date().toISOString().split('T')[0], notes:'' });
+  const m = members.find(x=>x.id===sel);
+  if (!m) return null;
+  const history = m.lifts[lift];
+  const pr = Math.max(...history.map(x=>x.weight));
+
+  const addEntry = async () => {
+    if (!form.weight) return;
+    setSaving(true);
+    const entry = { date:form.date, weight:parseFloat(form.weight), notes:form.notes };
+    try {
+      if (isConfigured) {
+        await db.from('lifts').insert({
+          member_id: m.id, lift_type: lift,
+          weight: entry.weight, lift_date: entry.date, notes: entry.notes
+        });
+      }
+      setMembers(prev => prev.map(x => x.id===sel
+        ? { ...x, lifts:{ ...x.lifts, [lift]:[...x.lifts[lift], entry] } }
+        : x
+      ));
+      toast(form.weight+'kg '+lift+' logged'+(parseFloat(form.weight)>pr?' — New PR! 🎉':''));
+      setModal(false);
+      setForm({ weight:'', date:new Date().toISOString().split('T')[0], notes:'' });
+    } catch(e) { toast('Error: '+e.message); }
+    setSaving(false);
+  };
+
+  return React.createElement('div', null,
+    React.createElement('div', { className:'cr cr-2' },
+      React.createElement('div', null,
+        React.createElement('div', { className:'card' },
+          React.createElement('div', { className:'ct' }, 'Select athlete'),
+          React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:3,maxHeight:300,overflowY:'auto'} },
+            members.map(x =>
+              React.createElement('button', {
+                key:x.id, onClick:()=>setSel(x.id),
+                style:{
+                  display:'flex',alignItems:'center',gap:8,padding:'7px 9px',
+                  borderRadius:7,cursor:'pointer',textAlign:'left',transition:'all .12s',
+                  border:sel===x.id?'0.5px solid var(--teal-400)':'0.5px solid transparent',
+                  background:sel===x.id?'var(--teal-50)':'transparent',
+                }
+              },
+                React.createElement('div',{className:'av',style:{background:avc(x.id),fontSize:9}},ini(x.name)),
+                React.createElement('div',null,
+                  React.createElement('div',{style:{fontSize:13,fontWeight:sel===x.id?500:400,color:sel===x.id?'var(--teal-800)':'var(--text)'}},x.name),
+                  React.createElement('div',{style:{fontSize:10,color:'var(--text2)'}},x.cat+' · '+x.weight+'kg')
+                )
+              )
+            )
+          )
+        )
+      ),
+      React.createElement('div', null,
+        React.createElement('div', { className:'sg sg-3', style:{marginBottom:12} },
+          ['squat','bench','deadlift'].map(l =>
+            React.createElement('div', { key:l, className:`lift-card${lift===l?' sel':''}`, onClick:()=>setLift(l) },
+              React.createElement('div',{className:'lift-val'},m.lifts[l].at(-1).weight+'kg'),
+              React.createElement('div',{className:'lift-lbl'},l.charAt(0).toUpperCase()+l.slice(1)),
+              React.createElement(SparkLine,{data:m.lifts[l].map(x=>x.weight)})
+            )
+          )
+        ),
+        React.createElement('div', { className:'card' },
+          React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10} },
+            React.createElement('div', null,
+              React.createElement('div',{className:'ct',style:{marginBottom:3}},lift+' history — '+m.name.split(' ')[0]),
+              React.createElement('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+                React.createElement('span',{className:'badge b-pr'},'PR: '+pr+'kg'),
+                React.createElement('span',{style:{fontSize:11,color:'var(--text2)'}},history.length+' entries')
+              )
+            ),
+            React.createElement('button',{className:'btn btn-p btn-s',onClick:()=>setModal(true)},
+              React.createElement('i',{className:'ti ti-plus'}),' Log lift'
+            )
+          ),
+          React.createElement('div',{className:'tb'},
+            React.createElement('table',null,
+              React.createElement('thead',null,
+                React.createElement('tr',null,['Date','Weight','Notes'].map(h=>React.createElement('th',{key:h},h)))
+              ),
+              React.createElement('tbody',null,
+                history.slice().reverse().map((e,i) =>
+                  React.createElement('tr',{key:i},
+                    React.createElement('td',null,e.date),
+                    React.createElement('td',null,
+                      React.createElement('span',{style:{fontWeight:e.weight===pr?500:400,color:e.weight===pr?'var(--purple-800)':'inherit'}},
+                        e.weight+'kg',
+                        e.weight===pr&&React.createElement('span',{className:'pr-tag',style:{marginLeft:5}},'PR')
+                      )
+                    ),
+                    React.createElement('td',null,React.createElement('span',{style:{fontSize:11,color:'var(--text2)'}},e.notes||'—'))
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+    modal && React.createElement('div',{className:'mbg',onClick:()=>setModal(false)},
+      React.createElement('div',{className:'modal',onClick:e=>e.stopPropagation()},
+        React.createElement('div',{className:'mt'},'Log '+lift+' for '+m.name),
+        React.createElement('div',{className:'fr'},
+          React.createElement('div',{className:'fg'},
+            React.createElement('label',{className:'fl'},'Weight (kg)'),
+            React.createElement('input',{className:'fi',type:'number',step:'0.5',value:form.weight,onChange:e=>setForm({...form,weight:e.target.value}),placeholder:'e.g. 140'})
+          ),
+          React.createElement('div',{className:'fg'},
+            React.createElement('label',{className:'fl'},'Date'),
+            React.createElement('input',{className:'fi',type:'date',value:form.date,onChange:e=>setForm({...form,date:e.target.value})})
+          )
+        ),
+        React.createElement('div',{className:'fg'},
+          React.createElement('label',{className:'fl'},'Notes (optional)'),
+          React.createElement('input',{className:'fi',value:form.notes,onChange:e=>setForm({...form,notes:e.target.value}),placeholder:'e.g. Belt and wraps, competition attempt'})
+        ),
+        React.createElement('div',{className:'ma'},
+          React.createElement('button',{className:'btn',onClick:()=>setModal(false)},'Cancel'),
+          React.createElement('button',{className:'btn btn-p',onClick:addEntry,disabled:saving},
+            saving?'Saving...':React.createElement('span',null,React.createElement('i',{className:'ti ti-check'}),' Save lift')
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ── Root App ── */
+function App() {
+  const [page, setPage] = useState('dashboard');
+  const [members, setMembers] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toastMsg, setToastMsg] = useState('');
+
+  const toast = useCallback((msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+  }, []);
+
+  useEffect(() => {
+    async function load() {
+      if (isConfigured) {
+        try {
+          const { data: ms } = await db.from('members').select('*').order('id');
+          const { data: lf } = await db.from('lifts').select('*').order('lift_date');
+          const { data: se } = await db.from('sessions').select('*').order('session_date', { ascending:false });
+          const { data: at } = await db.from('attendance').select('*');
+          const { data: fe } = await db.from('fees').select('*').order('id', { ascending:false });
+
+          const enriched = (ms||[]).map(m => {
+            const mLifts = (lf||[]).filter(l=>l.member_id===m.id);
+            const toHistory = (type) => {
+              const h = mLifts.filter(l=>l.lift_type===type).map(l=>({date:l.lift_date,weight:l.weight,notes:l.notes||''}));
+              return h.length ? h : mkLifts(m.id)[type];
+            };
+            const mAtt = (at||[]).filter(a=>a.member_id===m.id);
+            const sessions28 = mAtt.length ? mAtt.slice(0,28).map(a=>a.status) : mkMember(m.id,m.name,m.weight,m.category,m.fee_status).sessions;
+            const mFees = (fe||[]).filter(f=>f.member_id===m.id).map(f=>({m:f.month,s:f.status,d:f.paid_date||'',amt:f.amount}));
+            return {
+              ...mkMember(m.id,m.name,m.weight||0,m.category||'Senior',m.fee_status||'pending'),
+              phone: m.phone||'',
+              feeDate: m.fee_date||'',
+              sessions: sessions28,
+              lifts: { squat:toHistory('squat'), bench:toHistory('bench'), deadlift:toHistory('deadlift') },
+              fees: mFees.length ? mFees : mkMember(m.id,m.name,0,'',m.fee_status||'pending').fees,
+            };
+          });
+          setMembers(enriched);
+          setSessions((se||[]).map(s=>({
+            id:s.id, date:s.session_date, name:s.name||s.session_name||'Session',
+            present:s.present_count||0, absent:s.absent_count||0, total:s.total_count||10
+          })));
+        } catch(e) {
+          console.error(e);
+          setMembers(SEED_MEMBERS);
+          setSessions(SEED_SESSIONS);
+        }
+      } else {
+        setMembers(SEED_MEMBERS);
+        setSessions(SEED_SESSIONS);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const nav = [
+    {id:'dashboard',icon:'ti-layout-dashboard',label:'Dashboard'},
+    {id:'members',icon:'ti-users',label:'Members'},
+    {id:'fees',icon:'ti-cash',label:'Fees'},
+    {id:'attendance',icon:'ti-calendar-check',label:'Attendance'},
+    {id:'lifts',icon:'ti-barbell',label:'Lifts'},
+  ];
+
+  const titles = {
+    dashboard: ['Dashboard','Overview for May 2026'],
+    members:   ['Members','Manage athlete profiles'],
+    fees:      ['Fee management','Track and collect monthly dues'],
+    attendance:['Training attendance','Log and review sessions'],
+    lifts:     ['Lift tracker','Personal records and progress'],
+  };
+
+  if (loading) return React.createElement('div',{className:'loading-screen'},
+    React.createElement('div',{className:'spinner'}),
+    React.createElement('span',null,'Loading AGC...')
+  );
+
+  return React.createElement('div', null,
+    !isConfigured && React.createElement('div',{className:'db-banner'},
+      React.createElement('i',{className:'ti ti-info-circle'}),
+      'Demo mode. Add your Supabase URL and key to index.html to enable permanent data storage.'
+    ),
+    React.createElement('div',{className:'app'},
+      React.createElement('aside',{className:'sidebar'},
+        React.createElement('div',{className:'brand'},
+          React.createElement('div',{className:'brand-sub'},'Performance system'),
+          React.createElement('div',{className:'brand-name'},'Advance Genetics Club')
+        ),
+        React.createElement('nav',{className:'nav'},
+          React.createElement('div',{className:'nav-sec'},'Main'),
+          nav.map(n=>React.createElement('button',{key:n.id,className:`nav-item${page===n.id?' active':''}`,onClick:()=>setPage(n.id)},
+            React.createElement('i',{className:'ti '+n.icon}),n.label
+          ))
+        ),
+        React.createElement('div',{className:'sidebar-foot'},
+          members.length+' members · '+members.filter(m=>m.feeStatus==='paid').length+' paid'
+        )
+      ),
+      React.createElement('main',{className:'main'},
+        React.createElement('div',{className:'ph'},
+          React.createElement('h1',{className:'pt'},titles[page][0]),
+          React.createElement('p',{className:'ps'},titles[page][1])
+        ),
+        page==='dashboard'  && React.createElement(Dashboard,{members}),
+        page==='members'    && React.createElement(Members,{members,setMembers,toast}),
+        page==='fees'       && React.createElement(Fees,{members,setMembers,toast}),
+        page==='attendance' && React.createElement(Attendance,{members,sessions,setSessions,toast}),
+        page==='lifts'      && React.createElement(Lifts,{members,setMembers,toast})
+      )
+    ),
+    React.createElement(Toast,{msg:toastMsg})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
+/* ── Register PWA service worker ── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+}
+</script>
+</body>
+</html>
